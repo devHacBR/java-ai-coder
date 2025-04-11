@@ -1,7 +1,10 @@
 # engine/responder.py
 
-def generate_java_code(parsed_data):
+def generate_java_code(parsed_data, previous_components=None):
     intent = parsed_data["intent"]
+
+    if intent == "simple_gui":
+        return simple_gui_code(parsed_data, previous_components or [])
 
     if intent == "bubble_sort":
         return bubble_sort_code()
@@ -17,9 +20,9 @@ def generate_java_code(parsed_data):
     
     elif intent == "inheritance":
         return class_inheritance_code()
-
-    elif intent == "simple_gui":
-        return simple_gui_code()
+    
+    elif intent == "add_gui_component":
+        return add_gui_component_code(parsed_data, previous_components or [])
 
     else:
         return (
@@ -206,7 +209,7 @@ public class InheritanceExample {
     files = [{"path": "InheritanceExample.java", "content": code}]
     return code, explanation, files
 
-def simple_gui_code():
+def simple_gui_code(parsed_data=None, previous_components=None):
     code = '''\
 import javax.swing.*;
 
@@ -233,3 +236,145 @@ public class SimpleGUI {
     files = [{"path": "SimpleGUI.java", "content": code}]
     return code, explanation, files
 
+"""
+def simple_gui_code(parsed_data=None, previous_components=None):
+    if previous_components is None:
+        previous_components = ["button"]  # Default base GUI has a button
+
+    frame_code = '''\
+    import javax.swing.*;
+
+    public class SimpleGUI {
+        public static void main(String[] args) {
+        JFrame frame = new JFrame("Simple GUI");
+    '''
+
+    components_code = []
+    y = 60
+    for i, component in enumerate(previous_components):
+        name = component + str(i + 1)
+
+        if component == "button":
+            components_code.append(f'        JButton {name} = new JButton("Click Me!");')
+            components_code.append(f'        {name}.setBounds(100, {y}, 120, 30);')
+            components_code.append(f'        frame.add({name});')
+
+        elif component == "text_field":
+            components_code.append(f'        JTextField {name} = new JTextField();')
+            components_code.append(f'        {name}.setBounds(100, {y}, 120, 30);')
+            components_code.append(f'        frame.add({name});')
+
+        elif component == "label":
+            components_code.append(f'        JLabel {name} = new JLabel("Label");')
+            components_code.append(f'        {name}.setBounds(100, {y}, 120, 30);')
+            components_code.append(f'        frame.add({name});')
+
+        elif component == "checkbox":
+            components_code.append(f'        JCheckBox {name} = new JCheckBox("Accept");')
+            components_code.append(f'        {name}.setBounds(100, {y}, 120, 30);')
+            components_code.append(f'        frame.add({name});')
+
+        y += 40  # Increase vertical spacing
+
+    footer_code = '''\
+        frame.setSize(300, 300);
+        frame.setLayout(null);
+        frame.setVisible(true);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        }
+    } '''
+
+    full_code = frame_code + "\n" + "\n".join(components_code) + "\n" + footer_code
+
+    explanation = (
+        "This Java program creates a GUI using Swing with the following components:\n"
+        f"- {', '.join(previous_components)}\n"
+        "- Each element is positioned absolutely.\n"
+        "- No event listeners are added yet."
+    )
+
+    files = [{"path": "SimpleGUI.java", "content": full_code}]
+    return full_code, explanation, files
+"""
+
+def add_gui_component_code(parsed_data, previous_components):
+    component = parsed_data.get("component", "").lower()
+    
+    base_code, explanation, files = simple_gui_code()
+    updated_code = base_code
+    added_component_code = ""
+    extra_explanation = ""
+
+    if component == "text_field":
+        added_component_code = (
+            'JTextField textField = new JTextField();\n'
+            'textField.setBounds(100, 160, 120, 30);\n'
+            'frame.add(textField);\n'
+        )
+        extra_explanation = "- Added a `JTextField` below the button."
+
+    elif component == "label":
+        added_component_code = (
+            'JLabel label = new JLabel("Hello!");\n'
+            'label.setBounds(100, 200, 100, 30);\n'
+            'frame.add(label);\n'
+        )
+        extra_explanation = "- Added a `JLabel` to display static text."
+
+    elif component == "checkbox":
+        added_component_code = (
+            'JCheckBox checkBox = new JCheckBox("Accept");\n'
+            'checkBox.setBounds(100, 240, 120, 30);\n'
+            'frame.add(checkBox);\n'
+        )
+        extra_explanation = "- Added a `JCheckBox` to the GUI."
+
+    elif component == "textfield_button":
+        added_component_code = (
+            'JTextField input = new JTextField();\n'
+            'input.setBounds(100, 160, 120, 30);\n'
+            'frame.add(input);\n\n'
+            'JButton submit = new JButton("Submit");\n'
+            'submit.setBounds(100, 200, 120, 30);\n'
+            'frame.add(submit);\n'
+        )
+        extra_explanation = "- Added a `JTextField` and `Submit` button."
+
+    else:
+        return (
+            "// Component not supported yet.",
+            "Sorry, I can only add a button, label, checkbox, or text field at the moment.",
+            []
+        )
+
+    # Insert component lines after `frame.add(button);`
+    insert_after = "frame.add(button);"
+    updated_code = updated_code.replace(
+        insert_after,
+        insert_after + "\n        " + added_component_code.strip().replace('\n', '\n        ')
+    )
+
+    updated_explanation = explanation + "\n" + extra_explanation
+
+    files = [{"path": "SimpleGUI.java", "content": updated_code}]
+    return updated_code, updated_explanation, files
+
+"""
+def add_gui_component_code(parsed_data, previous_components):
+    component = parsed_data.get("component", "").lower()
+
+    # Start with previous components and append new one if valid
+    updated_components = previous_components.copy()
+
+    if component in ["text_field", "label", "checkbox", "textfield_button", "button"]:
+        updated_components.append(component)
+    else:
+        return (
+            "// Component not supported yet.",
+            "Sorry, I can only add a button, label, checkbox, or text field at the moment.",
+            []
+        )
+
+    # Generate updated GUI code with all components
+    return simple_gui_code(previous_components=updated_components)
+"""
