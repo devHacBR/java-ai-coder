@@ -1,12 +1,31 @@
 # engine/parser.py
 
+from difflib import get_close_matches
 import re
+
+intent_keywords = {
+    "bubble_sort": ["bubble", "bubble sort", "sort ascending"],
+    "quick_sort": ["quick", "quick sort", "partition sort"],
+    "threading": ["thread", "threads", "multithread", "multithreading"],
+    "file_reading": ["file", "read", "read file", "load text"],
+    "inheritance": ["inherit", "extends", "super class", "override"],
+    "simple_gui": ["gui", "button", "window", "swing", "frame"],
+}
+
+def fuzzy_intent_match(user_input):
+    words = user_input.lower().split()
+    for intent, keywords in intent_keywords.items():
+        for kw in keywords:
+            if get_close_matches(kw, words, n=1, cutoff=0.7):
+                return intent
+    return "unknown"
 
 def parse_input(user_input):
     """
     Naive parser that tries to extract Java programming task from user input.
     Later we’ll make it smarter.
     """
+    intent = fuzzy_intent_match(user_input)
     user_input = user_input.lower()
     entities = []
 
